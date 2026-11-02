@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  /* Palet selaras logo FISA: hijau zamrud pesantren */
+  --color-fisa-50: #f2f7f3;
+  --color-fisa-100: #e0eee3;
+  --color-fisa-200: #c2ddc9;
+  --color-fisa-300: #97c4a4;
+  --color-fisa-400: #6aa67d;
+  --color-fisa-500: #478a61;
+  --color-fisa-600: #346e4d;
+  --color-fisa-700: #2b5840;
+  --color-fisa-800: #254735;
+  --color-fisa-900: #0b3d2e;
+  --color-fisa-950: #072a20;
+  --color-gold-400: #d9b45b;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background: #f2f7f3;
+  --foreground: #0b3d2e;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.arch-pattern {
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% -10%,
+    rgba(255, 255, 255, 0.14),
+    transparent
+  );
+}
+
+.card-shadow {
+  box-shadow: 0 1px 2px rgba(11, 61, 46, 0.06),
+    0 8px 24px -12px rgba(11, 61, 46, 0.18);
+}

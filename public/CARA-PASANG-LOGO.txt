@@ -1,0 +1,13 @@
+CARA MEMASANG LOGO FISA
+=======================
+1. Siapkan file logo (PNG, disarankan 512x512, background transparan).
+2. Rename persis menjadi: logo-fisa.png
+3. Copy ke folder ini: public/logo-fisa.png
+4. Refresh browser — komponen <LogoFisa /> di Header & Login otomatis memakainya.
+5. Selama file belum ada, tampil monogram kubah "F" sebagai fallback (selaras warna logo: hijau zamrud #0B3D2E + aksen emas).
+
+Palet warna web (diambil dari logo):
+- Hijau tua  : #0B3D2E (sidebar, header)
+- Hijau sedang: #346E4D / #478A61
+- Hijau muda : #E0EEE3 / #F2F7F3 (background)
+- Aksen emas : #D9B45B (koin $ pada logo)
