@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatBulanTahun, formatRupiah, labelTingkatan } from "@/lib/utils";
@@ -18,7 +19,7 @@ export default function VerifikasiPage() {
         const supabase = createClient();
         let q = supabase
             .from("transaksi")
-            .select("*, santri(*, profil(*))")
+            .select("*, santri(*, users!santri_id_orang_tua_fkey(*))")
             .order("dibuat_pada", { ascending: false })
             .limit(100);
         if (filter !== "semua")
@@ -52,13 +53,14 @@ export default function VerifikasiPage() {
         }
     }
     const tampil = data.filter((t) => {
-        var _a, _b, _c, _d, _e, _f, _g;
         const k = cari.toLowerCase();
         if (!k)
             return true;
-        return (((_b = (_a = t.santri) === null || _a === void 0 ? void 0 : _a.nama_santri) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes(k)) ||
-            ((_e = (_d = (_c = t.santri) === null || _c === void 0 ? void 0 : _c.profil) === null || _d === void 0 ? void 0 : _d.nama_lengkap) === null || _e === void 0 ? void 0 : _e.toLowerCase().includes(k)) ||
-            ((_g = (_f = t.santri) === null || _f === void 0 ? void 0 : _f.nis) === null || _g === void 0 ? void 0 : _g.toLowerCase().includes(k)));
+        return (
+            (t.santri?.nama_santri?.toLowerCase().includes(k)) ||
+            (t.santri?.users?.nama_lengkap?.toLowerCase().includes(k)) ||
+            (t.santri?.nis?.toLowerCase().includes(k))
+        );
     });
     return (<div className="space-y-5">
       <PageHeader
@@ -76,54 +78,55 @@ export default function VerifikasiPage() {
         }}
       />
 
-      <Card className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
-          <Input placeholder="Cari nama santri / wali / NIS…" value={cari} onChange={(e) => setCari(e.target.value)} className="pl-10"/>
+      <Card className="rounded-2xl border border-fisa-100 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+            <Input placeholder="Cari nama santri / wali / NIS…" value={cari} onChange={(e) => setCari(e.target.value)} className="pl-10"/>
+          </div>
+          <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="sm:w-52">
+            <option value="semua">Semua status</option>
+            <option value="menunggu">Menunggu</option>
+            <option value="disetujui">Disetujui</option>
+            <option value="ditolak">Ditolak</option>
+          </Select>
+          <Button variant="outline" onClick={muat}>Muat ulang</Button>
         </div>
-        <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="sm:w-52">
-          <option value="semua">Semua status</option>
-          <option value="menunggu">Menunggu</option>
-          <option value="disetujui">Disetujui</option>
-          <option value="ditolak">Ditolak</option>
-        </Select>
-        <Button variant="outline" onClick={muat}>Muat ulang</Button>
       </Card>
 
-      <Card className="p-0">
-        {loading ? (<div className="space-y-2 p-5">
+      <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm">
+        {loading ? (<div className="p-8 text-center">
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12"/>)}
           </div>) : tampil.length === 0 ? (<p className="p-10 text-center text-sm font-medium text-fisa-500">
             Tidak ada transaksi yang cocok.
           </p>) : (<div className="overflow-x-auto">
             <table className="w-full min-w-3xl text-left text-sm">
               <thead>
-                <tr className="border-b border-fisa-100 bg-fisa-50/60 text-xs uppercase text-fisa-500">
-                  <th className="px-5 py-3">Tanggal</th>
-                  <th className="px-5 py-3">Santri</th>
-                  <th className="px-5 py-3">Tingkatan</th>
-                  <th className="px-5 py-3">Total</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3 text-right">Aksi</th>
+                <tr className="border-b border-fisa-100 bg-gradient-to-r from-fisa-50 to-slate-50 text-xs font-bold uppercase tracking-wide text-fisa-500">
+                  <th className="px-5 py-3.5">Tanggal</th>
+                  <th className="px-5 py-3.5">Santri</th>
+                  <th className="px-5 py-3.5">Tingkatan</th>
+                  <th className="px-5 py-3.5">Total</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {tampil.map((t) => {
-                var _a, _b, _c, _d, _e, _f, _g;
-                return (<tr key={t.id} className="border-b border-fisa-50 last:border-0 hover:bg-fisa-50/50">
+                {tampil.map((t, idx) => {
+                return (<tr key={t.id} className={`border-b border-fisa-50 last:border-0 transition-colors hover:bg-emerald-50/40 ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"}`}>
                     <td className="px-5 py-3 text-fisa-700">
                       {t.dibuat_pada ? new Date(t.dibuat_pada).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-"}
                       <span className="block text-xs text-fisa-500">{formatBulanTahun(t.bulan_tahun)}</span>
                     </td>
                     <td className="px-5 py-3 font-bold text-fisa-900">
-                      {(_b = (_a = t.santri) === null || _a === void 0 ? void 0 : _a.nama_santri) !== null && _b !== void 0 ? _b : "-"}
+                      {t.santri?.nama_santri ?? "-"}
                       <span className="block text-xs font-medium text-fisa-500">
-                        Wali: {(_e = (_d = (_c = t.santri) === null || _c === void 0 ? void 0 : _c.profil) === null || _d === void 0 ? void 0 : _d.nama_lengkap) !== null && _e !== void 0 ? _e : "-"}
+                        Wali: {t.santri?.users?.nama_lengkap ?? "-"}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-fisa-700">{labelTingkatan((_g = (_f = t.santri) === null || _f === void 0 ? void 0 : _f.tingkatan) !== null && _g !== void 0 ? _g : "-")}</td>
+                    <td className="px-5 py-3 text-fisa-700">{labelTingkatan(t.santri?.tingkatan ?? "-")}</td>
                     <td className="px-5 py-3 font-extrabold text-fisa-900">{formatRupiah(t.total_bayar)}</td>
-                    <td className="px-5 py-3"><StatusBadge status={t.status}/></td>
+                    <td className="px-5 py-3"><StatusBadge status={t.status} className="text-xs"/></td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="outline" onClick={() => setTerpilih(t)}>

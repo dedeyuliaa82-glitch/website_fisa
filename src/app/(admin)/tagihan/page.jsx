@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { bulanBerjalan, formatBulanTahun, formatRupiah, labelTingkatan } from "@/lib/utils";
+import { bulanBerjalan, cn, formatBulanTahun, formatRupiah, labelTingkatan } from "@/lib/utils";
 import { Button, Card, Input, Select, Skeleton, StatusBadge } from "@/components/ui";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Loader2, ReceiptText, Search, Sparkles, Trash2, TrendingUp, UserX, Wallet } from "lucide-react";
@@ -23,7 +23,7 @@ export default function TagihanPage() {
     const supabase = createClient();
     const { data: hasil } = await supabase
       .from("tagihan")
-      .select("*, santri(nama_santri, nis, tingkatan, profil(nama_lengkap))")
+      .select("*, santri(nama_santri, nis, tingkatan, users!santri_id_orang_tua_fkey(nama_lengkap))")
       .eq("bulan_tahun", p_bulan)
       .limit(1000);
     return (hasil ?? [])
@@ -104,7 +104,7 @@ export default function TagihanPage() {
     return (
       (t.santri?.nama_santri ?? "").toLowerCase().includes(k) ||
       (t.santri?.nis ?? "").toLowerCase().includes(k) ||
-      (t.santri?.profil?.nama_lengkap ?? "").toLowerCase().includes(k)
+      (t.santri?.users?.nama_lengkap ?? "").toLowerCase().includes(k)
     );
   });
 
@@ -145,73 +145,93 @@ export default function TagihanPage() {
         }}
       />
 
-      <Card className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div>
-          <label className="mb-1.5 block text-sm font-semibold text-fisa-900">Bulan Tagihan</label>
-          <Input type="month" value={bulan} onChange={(e) => setBulan(e.target.value)} className="sm:w-52" />
+      <Card className="rounded-2xl border border-fisa-100 bg-white p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-fisa-900">Bulan Tagihan</label>
+            <Input type="month" value={bulan} onChange={(e) => setBulan(e.target.value)} className="sm:w-52" />
+          </div>
+          <Button onClick={buatTagihan} disabled={buat || loading} className="sm:ml-auto">
+            {buat ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            Buat Tagihan
+          </Button>
         </div>
-        <Button onClick={buatTagihan} disabled={buat || loading} className="sm:ml-auto">
-          {buat ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-          Buat Tagihan
-        </Button>
       </Card>
 
       {pesan && <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{pesan}</div>}
       {galat && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{galat}</div>}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KartuRingkas icon={ReceiptText} label="Total Tagihan" nilai={formatRupiah(ringkasan.tertagih)} sub={`${ringkasan.total} santri`} />
-        <KartuRingkas icon={Wallet} label="Terkumpul" nilai={formatRupiah(ringkasan.terkumpul)} sub={`${ringkasan.lunas} lunas`} tone="emerald" />
-        <KartuRingkas icon={TrendingUp} label="Tunggakan" nilai={formatRupiah(ringkasan.sisa)} sub={`${ringkasan.sebagian} sebagian`} tone="amber" />
-        <KartuRingkas icon={UserX} label="Belum Bayar" nilai={`${ringkasan.belum} santri`} sub={formatBulanTahun(bulan)} tone="slate" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4 min-w-0">
+          <p className="text-[11px] font-bold uppercase text-fisa-500 truncate">Total Tagihan</p>
+          <p className="text-lg font-extrabold text-fisa-900 truncate">{formatRupiah(ringkasan.tertagih)}</p>
+          <p className="text-sm text-fisa-500 truncate">{ringkasan.total} santri</p>
+        </Card>
+        <Card className="p-4 min-w-0">
+          <p className="text-[11px] font-bold uppercase text-emerald-600 truncate">Terkumpul</p>
+          <p className="text-lg font-extrabold text-emerald-700 truncate">{formatRupiah(ringkasan.terkumpul)}</p>
+          <p className="text-sm text-emerald-500 truncate">{ringkasan.lunas} lunas</p>
+        </Card>
+        <Card className="p-4 min-w-0">
+          <p className="text-[11px] font-bold uppercase text-amber-600 truncate">Tunggakan</p>
+          <p className="text-lg font-extrabold text-amber-700 truncate">{formatRupiah(ringkasan.sisa)}</p>
+          <p className="text-sm text-amber-500 truncate">{ringkasan.sebagian} sebagian</p>
+        </Card>
+        <Card className="p-4 min-w-0">
+          <p className="text-[11px] font-bold uppercase text-slate-600 truncate">Belum Bayar</p>
+          <p className="text-lg font-extrabold text-slate-700 truncate">{ringkasan.belum} santri</p>
+          <p className="text-sm text-slate-500 truncate">{formatBulanTahun(bulan)}</p>
+        </Card>
       </div>
 
-      <Card className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400" />
-          <Input placeholder="Cari nama santri / wali / NIS…" value={cari} onChange={(e) => setCari(e.target.value)} className="pl-10" />
+      <Card className="rounded-2xl border border-fisa-100 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="relative flex-1">
+            <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400" />
+            <Input placeholder="Cari nama santri / wali / NIS…" value={cari} onChange={(e) => setCari(e.target.value)} className="pl-10" />
+          </div>
+          <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="sm:w-52">
+            <option value="semua">Semua status</option>
+            <option value="belum_bayar">Belum bayar</option>
+            <option value="sebagian">Sebagian</option>
+            <option value="lunas">Lunas</option>
+            <option value="dibatalkan">Dibatalkan</option>
+          </Select>
+          <Button variant="outline" onClick={muat} disabled={loading}>Muat ulang</Button>
         </div>
-        <Select value={filter} onChange={(e) => setFilter(e.target.value)} className="sm:w-52">
-          <option value="semua">Semua status</option>
-          <option value="belum_bayar">Belum bayar</option>
-          <option value="sebagian">Sebagian</option>
-          <option value="lunas">Lunas</option>
-          <option value="dibatalkan">Dibatalkan</option>
-        </Select>
-        <Button variant="outline" onClick={muat} disabled={loading}>Muat ulang</Button>
       </Card>
 
-      <Card className="p-0">
+      <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm">
         {loading ? (
-          <div className="space-y-2 p-5">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}</div>
+          <div className="p-8 text-center">
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}
+          </div>
         ) : tampil.length === 0 ? (
           <div className="flex flex-col items-center gap-2 p-10 text-center">
             <ReceiptText size={28} className="text-fisa-300" />
-            <p className="text-sm font-medium text-fisa-500">
-              Belum ada tagihan untuk {formatBulanTahun(bulan)}. Klik “Buat Tagihan” untuk membuatnya.
-            </p>
+            <p className="text-sm font-medium text-fisa-500">Belum ada tagihan untuk {formatBulanTahun(bulan)}. Klik “Buat Tagihan” untuk membuatnya.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-3xl text-left text-sm">
+          <div className="overflow-x-auto p-4">
+            <table className="w-full min-w-full text-sm">
               <thead>
-                <tr className="border-b border-fisa-100 bg-fisa-50/60 text-xs uppercase text-fisa-500">
-                  <th className="px-5 py-3">Santri</th>
-                  <th className="px-5 py-3">Tingkatan</th>
-                  <th className="px-5 py-3">Tagihan</th>
-                  <th className="px-5 py-3">Dibayar</th>
-                  <th className="px-5 py-3">Sisa</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3 text-right">Aksi</th>
+                <tr className="border-b border-fisa-100 bg-gradient-to-r from-fisa-50 to-slate-50 text-xs font-bold uppercase tracking-wide text-fisa-600">
+                  <th className="px-5 py-3.5 font-semibold">Santri</th>
+                  <th className="px-5 py-3.5 font-semibold">Tingkatan</th>
+                  <th className="px-5 py-3.5 font-semibold">Tagihan</th>
+                  <th className="px-5 py-3.5 font-semibold">Dibayar</th>
+                  <th className="px-5 py-3.5 font-semibold">Sisa</th>
+                  <th className="px-5 py-3.5 font-semibold">Status</th>
+                  <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {tampil.map((t) => (
-                  <tr key={t.id} className="border-b border-fisa-50 last:border-0 hover:bg-fisa-50/50">
+                {tampil.map((t, idx) => (
+                  <tr key={t.id} className={`border-b border-fisa-50 last:border-0 transition-colors hover:bg-fisa-50/60 ${idx % 2 === 0 ? "bg-white" : "bg-fisa-25"}`}>
                     <td className="px-5 py-3 font-bold text-fisa-900">
                       {t.santri?.nama_santri ?? "-"}
                       <span className="block text-xs font-medium text-fisa-500">
-                        Wali: {t.santri?.profil?.nama_lengkap ?? "-"}
+                        Wali: {t.santri?.users?.nama_lengkap ?? "-"}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-fisa-700">{labelTingkatan(t.tingkatan)}</td>
@@ -220,7 +240,7 @@ export default function TagihanPage() {
                     <td className={Number(t.total_tagihan) - Number(t.total_dibayar) > 0.5 ? "px-5 py-3 font-bold text-amber-700" : "px-5 py-3 font-bold text-fisa-500"}>
                       {formatRupiah(Math.max(0, Number(t.total_tagihan) - Number(t.total_dibayar)))}
                     </td>
-                    <td className="px-5 py-3"><StatusBadge status={t.status} /></td>
+                    <td className="px-5 py-3"><StatusBadge status={t.status} className="text-xs" /></td>
                     <td className="px-5 py-3 text-right">
                       <Button size="sm" variant="danger" onClick={() => hapus(t)} title="Hapus tagihan">
                         <Trash2 size={14} />
@@ -239,21 +259,16 @@ export default function TagihanPage() {
 
 function KartuRingkas({ icon: Icon, label, nilai, sub, tone = "fisa" }) {
   const warna = {
-    fisa: "bg-fisa-800 text-white",
-    emerald: "bg-emerald-600 text-white",
-    amber: "bg-amber-500 text-white",
-    slate: "bg-slate-700 text-white",
+    fisa: "text-fisa-900",
+    emerald: "text-emerald-700",
+    amber: "text-amber-700",
+    slate: "text-slate-700",
   }[tone];
   return (
-    <Card className="flex items-start gap-3">
-      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${warna}`}>
-        <Icon size={18} />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase text-fisa-500">{label}</p>
-        <p className="truncate text-lg font-extrabold text-fisa-900">{nilai}</p>
-        <p className="text-xs text-fisa-500">{sub}</p>
-      </div>
+    <Card className="p-4">
+      <p className="text-[11px] font-bold uppercase text-fisa-500">{label}</p>
+      <p className={cn("mt-0.5 text-lg font-extrabold", warna)}>{nilai}</p>
+      <p className="text-xs text-fisa-500">{sub}</p>
     </Card>
   );
 }

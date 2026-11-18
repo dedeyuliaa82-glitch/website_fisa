@@ -23,7 +23,7 @@ export function PageHeader({ judul, deskripsi, bantuan, aksi, className }) {
     <div className={cn("flex flex-wrap items-start justify-between gap-3", className)}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-extrabold tracking-tight text-fisa-900">
+          <h1 className="text-xl font-extrabold tracking-tight text-fisa-900 sm:text-2xl">
             {judul}
           </h1>
           {adaBantuan && (
@@ -32,14 +32,14 @@ export function PageHeader({ judul, deskripsi, bantuan, aksi, className }) {
               onClick={() => setBuka(true)}
               title={`Bantuan: ${judul}`}
               aria-label={`Buka bantuan ${judul}`}
-              className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full bg-fisa-100 text-fisa-600 transition hover:bg-fisa-800 hover:text-white"
+              className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-full bg-fisa-100 text-fisa-700 transition hover:bg-fisa-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-fisa-500 focus-visible:ring-offset-2"
             >
               <Info size={15} />
             </button>
           )}
         </div>
         {deskripsi && (
-          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-fisa-600">
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-fisa-600">
             {deskripsi}
           </p>
         )}

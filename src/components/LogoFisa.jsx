@@ -18,10 +18,11 @@ export function LogoFisa({ size = 44, withText = true, dark = false, className, 
           </svg>)}
       </div>
       {withText && (<div className="leading-tight">
-          <p className={cn("text-lg font-extrabold tracking-tight", dark ? "text-white" : "text-fisa-900")}>
+        
+          <p className={cn("text-[25px] font-extrabold", dark ? "text-fisa-200" : "text-fisa-900")}>
             FISA
           </p>
-          <p className={cn("text-[11px] font-medium", dark ? "text-fisa-200" : "text-fisa-600")}>
+          <p className={cn("text-[11px] font-medium", dark ? "text-fisa-200" : "text-fisa-900")}>
             Finansial Santri App
           </p>
         </div>)}

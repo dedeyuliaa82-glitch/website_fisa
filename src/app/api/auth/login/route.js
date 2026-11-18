@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
 import { tandaTanganJwt } from "@/lib/auth/jwt";
 import { COOKIE_TOKEN, COOKIE_USER, UMUR_SESI, secretJwt } from "@/lib/auth/session";
+import { klienAdmin } from "@/lib/supabase/admin";
 
 /**
  * POST /api/auth/login
  * Body: { username, password }
+ * `username` boleh berisi username admin atau email (wali & admin).
  * Dipakai website (cookie) dan mobile (token di response JSON).
  */
 export async function POST(request) {
     try {
         const body = await request.json();
-        const username = String(body.username ?? "").trim();
+        const kunci = String(body.username ?? "").trim().toLowerCase();
         const password = String(body.password ?? "");
-        if (!username || !password) {
-            return NextResponse.json({ error: "Username/email dan password wajib diisi." }, { status: 400 });
+        if (!kunci || !password) {
+            return NextResponse.json({ error: "Email/username dan password wajib diisi." }, { status: 400 });
         }
 
         const secret = secretJwt();
@@ -24,41 +26,53 @@ export async function POST(request) {
             }, { status: 500 });
         }
 
-        const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
-            auth: { persistSession: false, autoRefreshToken: false },
-        });
+        const admin = await klienAdmin();
+        const kolom = "id, username, email, password_hash, nama_lengkap, peran, aktif";
 
-        const { data, error } = await supabase.rpc("login_user", {
-            p_username: username,
-            p_password: password,
-        });
+        // Cari berdasarkan email dulu (akun wali memakai email), lalu username.
+        const [{ data: lewatEmail }, { data: lewatUsername }] = await Promise.all([
+            admin.from("users").select(kolom).eq("email", kunci).eq("aktif", true).limit(1).maybeSingle(),
+            admin.from("users").select(kolom).eq("username", kunci).eq("aktif", true).limit(1).maybeSingle(),
+        ]);
+        const user = lewatEmail ?? lewatUsername;
 
-        if (error) {
-            const pesan = String(error.message ?? "");
-            if (/could not find the function|PGRST202|login_user/i.test(pesan)) {
-                throw new Error("Tabel users belum siap. Jalankan supabase/migrasi_users.sql di SQL Editor Supabase.");
-            }
-            throw error;
+        if (!user) {
+            return NextResponse.json({ error: "Email/username atau password salah." }, { status: 401 });
         }
 
-        const user = Array.isArray(data) ? data[0] : data;
-        if (!user) {
-            return NextResponse.json({ error: "Username/email atau password salah." }, { status: 401 });
+        const hash = String(user.password_hash ?? "");
+        let cocok = false;
+        if (hash.startsWith("$2")) {
+            cocok = await bcrypt.compare(password, hash);
+        }
+        else {
+            // Hash lama yang masih plaintext: cocokkan lalu perbarui ke bcrypt.
+            cocok = hash !== "" && hash === password;
+            if (cocok) {
+                const baru = await bcrypt.hash(password, 10);
+                await admin.from("users").update({ password_hash: baru }).eq("id", user.id);
+            }
+        }
+
+        if (!cocok) {
+            return NextResponse.json({ error: "Email/username atau password salah." }, { status: 401 });
         }
 
         const token = await tandaTanganJwt({
-            sub: user.id_profil,
+            sub: user.id,
             aud: "authenticated",
             role: "authenticated",
             peran: user.peran,
-            nama: user.nama_lengkap ?? user.username,
-            username: user.username,
+            nama: user.nama_lengkap ?? user.username ?? user.email,
+            username: user.username ?? user.email,
         }, secret, UMUR_SESI);
 
         const ringkas = {
-            id: user.id_profil,
+            id: user.id,
+            id_user: user.id,
             username: user.username,
-            nama: user.nama_lengkap ?? user.username,
+            email: user.email,
+            nama: user.nama_lengkap ?? user.username ?? user.email,
             peran: user.peran,
         };
 
@@ -74,6 +88,7 @@ export async function POST(request) {
         return response;
     }
     catch (err) {
+        console.error("Login gagal:", err);
         return NextResponse.json({ error: err instanceof Error ? err.message : "Login gagal." }, { status: 500 });
     }
 }

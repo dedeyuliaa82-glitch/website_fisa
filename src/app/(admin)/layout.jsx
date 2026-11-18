@@ -48,10 +48,10 @@ export default function AdminLayout({ children, }) {
           <Image src="/logo-fisa.png" alt="" width={400} height={400} priority={false}/>
         </div>
         <Header namaAdmin={namaAdmin} onMenu={() => setMenuTerbuka(true)}/>
-        <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 p-5 sm:p-6 lg:p-10">
           {children}
         </main>
-        <footer className="px-6 pb-5 text-center text-xs text-fisa-500">
+        <footer className="px-6 pb-5 text-center text-xs font-medium text-fisa-600">
           FISA • Finansial Santri App — Dashboard Admin Pesantren
         </footer>
       </div>

@@ -22,7 +22,7 @@ export function SantriFormModal({ awal, onClose, onSelesai, }) {
         (async () => {
             const supabase = createClient();
             const { data } = await supabase
-                .from("profil")
+                .from("users")
                 .select("id, nama_lengkap, nomor_telepon")
                 .eq("peran", "orang_tua")
                 .order("nama_lengkap")
@@ -111,7 +111,7 @@ export function SantriFormModal({ awal, onClose, onSelesai, }) {
           <p className="mt-1 text-xs text-fisa-500">
             {daftarWali.length === 0
             ? "Belum ada data wali. Tambahkan dulu lewat tab Data Wali (cukup nama & nomor telepon)."
-            : "Wali diambil dari tab Data Wali. Tambahkan wali baru di sana bila belum terdaftar."}
+            : "Wali diambil dari Data Wali. Tambahkan wali baru di tambah wali bila belum terdaftar."}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 pt-1">

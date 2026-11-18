@@ -20,7 +20,7 @@ export function Button(_a) {
     return (<button {...p} className={cn("inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60", size === "sm" && "px-3 py-1.5 text-sm", size === "md" && "px-4 py-2.5 text-sm", size === "lg" && "px-6 py-3 text-base", variant === "primary" && "bg-fisa-800 text-white shadow hover:bg-fisa-700", variant === "secondary" && "bg-fisa-100 text-fisa-900 hover:bg-fisa-200", variant === "outline" && "border border-fisa-200 bg-white text-fisa-800 hover:border-fisa-400 hover:bg-fisa-50", variant === "danger" && "bg-red-600 text-white shadow hover:bg-red-500", variant === "ghost" && "text-fisa-700 hover:bg-fisa-100", className)}/>);
 }
 /* ---- Input / Select / Textarea ---- */
-const field = "w-full rounded-xl border border-fisa-200 bg-white px-3.5 py-2.5 text-sm text-fisa-950 placeholder:text-fisa-950/35 outline-none transition focus:border-fisa-500 focus:ring-2 focus:ring-fisa-500/20";
+const field = "w-full rounded-xl border border-fisa-200 bg-white px-3.5 py-2.5 text-sm text-fisa-950 placeholder:text-fisa-500 outline-none transition focus:border-fisa-500 focus:ring-2 focus:ring-fisa-500/20";
 export function Input(_a) {
     var { className } = _a, p = __rest(_a, ["className"]);
     return <input {...p} className={cn(field, className)}/>;
@@ -196,47 +196,52 @@ export function Label({ children, className }) {
 }
 /* ---- Kartu ---- */
 export function Card({ className, children }) {
-    return (<div className={cn("card-shadow rounded-2xl border border-fisa-100 bg-white p-5", className)}>
+    return (<div className={cn("rounded-2xl border border-fisa-100 bg-white shadow-sm overflow-hidden", className)}>
       {children}
     </div>);
 }
 /* ---- Badge status ---- */
-export function StatusBadge({ status }) {
-    var _a;
+export function StatusBadge({ status, className }) {
     const map = {
-        menunggu: "bg-amber-100 text-amber-800 ring-amber-300",
-        disetujui: "bg-emerald-100 text-emerald-800 ring-emerald-300",
-        ditolak: "bg-red-100 text-red-700 ring-red-300",
-        belum_bayar: "bg-slate-100 text-slate-700 ring-slate-300",
-        sebagian: "bg-amber-100 text-amber-800 ring-amber-300",
-        lunas: "bg-emerald-100 text-emerald-800 ring-emerald-300",
-        dibatalkan: "bg-red-100 text-red-700 ring-red-300",
+        menunggu: { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200", dot: "bg-amber-500" },
+        disetujui: { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", dot: "bg-emerald-500" },
+        ditolak: { bg: "bg-red-50", text: "text-red-600", ring: "ring-red-200", dot: "bg-red-500" },
+        belum_bayar: { bg: "bg-slate-50", text: "text-slate-600", ring: "ring-slate-200", dot: "bg-slate-400" },
+        sebagian: { bg: "bg-blue-50", text: "text-blue-700", ring: "ring-blue-200", dot: "bg-blue-500" },
+        lunas: { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", dot: "bg-emerald-500" },
+        dibatalkan: { bg: "bg-red-50", text: "text-red-600", ring: "ring-red-200", dot: "bg-red-400" },
     };
     const label = {
-        belum_bayar: "Belum bayar",
+        menunggu: "Menunggu",
+        disetujui: "Disetujui",
+        ditolak: "Ditolak",
+        belum_bayar: "Belum Bayar",
         sebagian: "Sebagian",
         lunas: "Lunas",
         dibatalkan: "Dibatalkan",
     };
-    return (<span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1", (_a = map[status]) !== null && _a !== void 0 ? _a : "bg-slate-100 text-slate-600 ring-slate-300")}>
-      <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-current"/>
-      {label[status] ?? status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>);
+    const style = map[status] ?? { bg: "bg-slate-50", text: "text-slate-600", ring: "ring-slate-200", dot: "bg-slate-400" };
+    return (
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1", style.bg, style.text, style.ring, className)}>
+            <span className={cn("h-1.5 w-1.5 rounded-full", style.dot)} />
+            {label[status] ?? (status?.charAt(0).toUpperCase() + status?.slice(1))}
+        </span>
+    );
 }
 /* ---- Modal sederhana ---- */
 export function Modal({ open, onClose, title, children, wide }) {
-    if (!open)
+    if (!open || typeof document === "undefined")
         return null;
-    return (<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    return createPortal(<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-fisa-950/60 backdrop-blur-sm" onClick={onClose}/>
-      <div className={cn("relative max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl", wide ? "max-w-3xl" : "max-w-lg")}>
-        <div className="mb-4 flex items-center justify-between">
+      <div role="dialog" aria-modal="true" className={cn("relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-2xl border border-fisa-100 bg-white p-6 shadow-2xl", wide ? "max-w-3xl" : "max-w-lg")}>
+        <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-lg font-extrabold text-fisa-900">{title}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-fisa-50 text-xl text-fisa-700 hover:bg-fisa-100">×</button>
+          <button onClick={onClose} aria-label="Tutup" className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full bg-fisa-50 text-xl leading-none text-fisa-700 transition hover:bg-fisa-100">×</button>
         </div>
         {children}
       </div>
-    </div>);
+    </div>, document.body);
 }
 /* ---- Toggle switch ---- */
 export function Switch({ checked, onChange, label }) {

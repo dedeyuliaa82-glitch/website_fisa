@@ -55,7 +55,7 @@ export function PengaturanBiayaPanel() {
                 if (data.diperbarui_pada) {
                     let oleh = "admin";
                     if (data.diperbarui_oleh) {
-                        const { data: p } = await supabase.from("profil").select("nama_lengkap").eq("id", data.diperbarui_oleh).maybeSingle();
+                        const { data: p } = await supabase.from("users").select("nama_lengkap").or(`id.eq.${data.diperbarui_oleh},id_profil.eq.${data.diperbarui_oleh}`).maybeSingle();
                         oleh = (_a = p === null || p === void 0 ? void 0 : p.nama_lengkap) !== null && _a !== void 0 ? _a : String(data.diperbarui_oleh).slice(0, 8);
                     }
                     setTerakhir(`Terakhir diubah oleh ${oleh} pada ${new Date(data.diperbarui_pada).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`);
@@ -105,7 +105,7 @@ export function PengaturanBiayaPanel() {
             setSimpan(false);
         }
     }
-    return (<Card>
+    return (<Card className="p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-fisa-800 text-white">
             <Settings2 size={20}/>

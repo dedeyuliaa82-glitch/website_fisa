@@ -29,13 +29,18 @@ export function VerifikasiModal({ transaksi, onClose, onSelesai, onRefresh, }) {
         setGalat("");
         setAlasan("");
         setModeTolak(false);
-        setKwitansi(null);
         setEditNom({
             spp: Number(transaksi?.nominal_spp ?? 0),
             makan: Number(transaksi?.nominal_uang_makan ?? 0),
             syahriah: Number(transaksi?.nominal_syahriah ?? 0),
             beras: Number(transaksi?.nominal_beras ?? 0),
         });
+        if (transaksi?.status === "disetujui") {
+            const nomor = nomorKwitansi(transaksi);
+            setKwitansi({ nomor, namaVerifikator: "Admin Ponpes", otomatis: false });
+        } else {
+            setKwitansi(null);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [transaksi && transaksi.id]);
     useEffect(() => {
@@ -45,8 +50,10 @@ export function VerifikasiModal({ transaksi, onClose, onSelesai, onRefresh, }) {
             if (!oleh)
                 return;
             const supabase = createClient();
-            const { data } = await supabase.from("profil").select("nama_lengkap").eq("id", oleh).maybeSingle();
-            setNamaVerifikator((data && data.nama_lengkap) || String(oleh).slice(0, 8));
+            const { data } = await supabase.from("users").select("nama_lengkap").or(`id.eq.${oleh},id_profil.eq.${oleh}`).maybeSingle();
+            const nama = (data && data.nama_lengkap) || String(oleh).slice(0, 8);
+            setNamaVerifikator(nama);
+            setKwitansi((k) => (k ? { ...k, namaVerifikator: nama } : k));
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [transaksi && transaksi.id]);
@@ -268,10 +275,10 @@ export function VerifikasiModal({ transaksi, onClose, onSelesai, onRefresh, }) {
 
         {/* Rincian */}
         <div>
-          <p className="text-lg font-extrabold text-fisa-900">{(_a = t.santri) === null || _a === void 0 ? void 0 : _a.nama_santri}</p>
+          <p className="text-lg font-extrabold text-fisa-900">{t.santri?.nama_santri ?? "-"}</p>
           <p className="text-sm text-fisa-600">
-            {(_c = (_b = t.santri) === null || _b === void 0 ? void 0 : _b.tingkatan) === null || _c === void 0 ? void 0 : _c.toUpperCase()} • NIS {(_e = (_d = t.santri) === null || _d === void 0 ? void 0 : _d.nis) !== null && _e !== void 0 ? _e : "-"} • Wali:{" "}
-            {(_h = (_g = (_f = t.santri) === null || _f === void 0 ? void 0 : _f.profil) === null || _g === void 0 ? void 0 : _g.nama_lengkap) !== null && _h !== void 0 ? _h : "-"}
+            {t.santri?.tingkatan?.toUpperCase() ?? "-"} • NIS {t.santri?.nis ?? "-"} • Wali:{" "}
+            {t.santri?.users?.nama_lengkap ?? "-"}
           </p>
           <div className="mt-1 flex items-center gap-2">
             <StatusBadge status={t.status}/>

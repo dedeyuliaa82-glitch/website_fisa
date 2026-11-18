@@ -58,20 +58,20 @@ function LoginForm() {
           </div>
           <LogoFisa dark size={52}/>
           <div className="relative">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-fisa-100">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-emerald-800">
               <ShieldCheck size={14} className="text-gold-400"/>
-              Panel Khusus Pengurus
+              Area Khusus Pengurus
             </div>
             <h1 className="text-3xl font-extrabold leading-tight">
               Kelola Keuangan Santri dengan{" "}
               <span className="text-gold-400">Amanah.</span>
             </h1>
-            <p className="mt-3 text-sm leading-relaxed text-fisa-200">
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">
               Verifikasi pembayaran SPP, uang makan, syahriah, dan beras —
-              semua terhubung langsung ke database Supabase FISA.
+              semua tersimpan dengan aman.
             </p>
           </div>
-          <p className="relative text-xs text-fisa-300">
+          <p className="relative text-xs text-emerald-800">
             FISA • Finansial Santri App — © 2026 Pesantren
           </p>
         </div>
@@ -122,10 +122,7 @@ function LoginForm() {
           </form>
 
           <p className="mt-6 rounded-xl bg-fisa-50/90 p-3 text-center text-xs leading-relaxed text-fisa-600">
-            Login memakai tabel <code className="rounded bg-fisa-100 px-1">users</code>{" "}
-            (bukan Authentication Supabase). Hanya akun dengan peran{" "}
-            <b>admin</b> yang bisa masuk website. Akun wali (orang_tua)
-            gunakan aplikasi mobile.
+             Akses website khusus untuk admin pesantren. Jika Anda bukan admin, silakan hubungi pengurus pesantren untuk mendapatkan akun admin.
           </p>
           </div>
         </div>

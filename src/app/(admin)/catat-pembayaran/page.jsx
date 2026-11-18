@@ -83,7 +83,7 @@ export default function CatatPembayaranPage() {
           }}
         />
 
-        <Card>
+        <Card className="p-4">
           <TambahTransaksiModal inline onSelesai={muat} />
         </Card>
 

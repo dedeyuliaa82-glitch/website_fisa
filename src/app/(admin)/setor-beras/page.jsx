@@ -1,10 +1,11 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { bulanBerjalan, formatBulanTahun } from "@/lib/utils";
-import { Button, Card, Input, Label } from "@/components/ui";
+import { bulanBerjalan, cn, formatBulanTahun } from "@/lib/utils";
+import { Card, Input, Label, Button, Skeleton } from "@/components/ui";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Wheat, Loader2, CheckCircle2, Search } from "lucide-react";
+import { Wheat, Loader2, CheckCircle2, XCircle, Search } from "lucide-react";
 export default function SetorBerasPage() {
     var _a;
     const [daftar, setDaftar] = useState([]);
@@ -81,7 +82,15 @@ export default function SetorBerasPage() {
             setProses(false);
         }
     }
-    return (<div className="mx-auto max-w-4xl space-y-5">
+    // Tentukan kelas warna pesan
+    const pesanClass = pesan.startsWith("Berhasil")
+        ? "text-emerald-600"
+        : pesan.startsWith("Gagal")
+            ? "text-red-600"
+            : "text-fisa-600";
+    const iconBerhasil = pesan.startsWith("Berhasil") ? <CheckCircle2 size={17} className="mt-0.5 shrink-0"/> : null;
+    const iconGagal = pesan.startsWith("Gagal") ? <XCircle size={17} className="mt-0.5 shrink-0"/> : null;
+    return (<div className="mx-auto max-w-7xl space-y-5">
       <PageHeader
         judul="Setor Beras Fisik"
         deskripsi="Catat santri lokal yang mengumpulkan beras 10 kg langsung ke pondok."
@@ -96,29 +105,32 @@ export default function SetorBerasPage() {
         }}
       />
 
-      <Card>
-        {pesan && (<div className={`mb-4 flex items-start gap-2 rounded-xl p-3 text-sm font-semibold ${pesan.startsWith("Berhasil") ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-            {pesan.startsWith("Berhasil") && <CheckCircle2 size={17} className="mt-0.5 shrink-0"/>}
-            {pesan}
-          </div>)}
+      <Card className="rounded-2xl border border-fisa-100 bg-white p-6 shadow-sm">
+        {pesan && (<div className="mb-4 flex items-start gap-2 rounded-xl p-3 text-sm font-semibold">
+          <span className={pesanClass}>
+            {iconBerhasil}{iconGagal}{pesan}
+          </span>
+        </div>)}
 
         <form onSubmit={simpan} className="space-y-4">
-          <div>
-            <Label>Cari Santri Lokal</Label>
-            <div className="relative">
-              <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
-              <Input value={cari} onChange={(e) => setCari(e.target.value)} placeholder="Ketik nama / NIS…" className="pl-10"/>
-            </div>
-            {cari && (<div className="mt-2 max-h-52 overflow-y-auto rounded-xl border border-fisa-100">
-                {saring.slice(0, 20).map((s) => {
-                var _a;
-                return (<button type="button" key={s.id} onClick={() => { setSantriId(s.id); setCari(s.nama_santri); }} className={`block w-full cursor-pointer px-4 py-2.5 text-left text-sm hover:bg-fisa-50 ${santriId === s.id ? "bg-fisa-100 font-bold text-fisa-900" : "text-fisa-800"}`}>
-                    {s.nama_santri} <span className="text-xs text-fisa-500">• NIS {(_a = s.nis) !== null && _a !== void 0 ? _a : "-"}</span>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Cari Santri Lokal</Label>
+              <div className="relative">
+                <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+                <Input value={cari} onChange={(e) => setCari(e.target.value)} placeholder="Ketik nama / NIS…" className="pl-10"/>
+              </div>
+              {cari && (<div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-fisa-100">
+                  {saring.slice(0, 20).map((s) => {
+                  var _a;
+                  return (<button type="button" key={s.id} onClick={() => { setSantriId(s.id); setCari(s.nama_santri); }} className={cn("block w-full cursor-pointer px-4 py-2.5 text-left text-sm hover:bg-fisa-50", santriId === s.id && "bg-fisa-100 font-bold text-fisa-900")}>
+                      {s.nama_santri} <span className="text-xs text-fisa-500">• NIS {(_a = s.nis) !== null && _a !== void 0 ? _a : "-"}</span>
                   </button>);
-            })}
-                {saring.length === 0 && (<p className="px-4 py-3 text-sm text-fisa-500">Tidak ditemukan. Hanya santri lokal yang tampil.</p>)}
-              </div>)}
-            {namaTerpilih && !cari && (<p className="mt-2 text-sm font-bold text-fisa-800">Terpilih: {namaTerpilih}</p>)}
+              })}
+                  {saring.length === 0 && (<p className="px-4 py-3 text-sm text-fisa-500">Tidak ditemukan. Hanya santri lokal yang tampil.</p>)}
+                </div>)}
+              {namaTerpilih && !cari && (<p className="mt-2 text-sm font-bold text-fisa-800">Terpilih: {namaTerpilih}</p>)}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -132,7 +144,7 @@ export default function SetorBerasPage() {
             </div>
           </div>
 
-          <Button type="submit" size="lg" className="w-full" disabled={proses || !santriId}>
+          <Button type="submit" size="lg" className="w-full">
             {proses && <Loader2 size={18} className="animate-spin"/>}
             <Wheat size={18}/> Simpan Setoran 10 Kg
           </Button>

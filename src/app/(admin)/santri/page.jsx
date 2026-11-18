@@ -1,8 +1,8 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { labelTingkatan } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { cn, labelTingkatan } from "@/lib/utils";
 import { Button, Card, Input, Select, Skeleton } from "@/components/ui";
 import { SantriFormModal } from "@/components/santri/SantriFormModal";
 import { ImportCsvModal } from "@/components/santri/ImportCsvModal";
@@ -32,7 +32,7 @@ export default function SantriPage() {
         var _a;
         setLoading(true);
         const supabase = createClient();
-        let q = supabase.from("santri").select("*, profil(*)").order("nama_santri").limit(200);
+        let q = supabase.from("santri").select("*, users!santri_id_orang_tua_fkey(id, nama_lengkap)").order("nama_santri").limit(200);
         if (filter !== "semua")
             q = q.eq("tingkatan", filter);
         const { data: hasil } = await q;
@@ -44,13 +44,13 @@ export default function SantriPage() {
         setLoadingWali(true);
         const supabase = createClient();
         const [{ data: profil, error: errProfil }, { data: santri }, { data: akun }] = await Promise.all([
-            supabase.from("profil").select("id, nama_lengkap, nomor_telepon, email").eq("peran", "orang_tua").order("nama_lengkap").limit(200),
+            supabase.from("users").select("id, nama_lengkap, nomor_telepon, email").eq("peran", "orang_tua").order("nama_lengkap").limit(200),
             supabase.from("santri").select("nama_santri, id_orang_tua").limit(500),
-            supabase.rpc("admin_daftar_akun"),
+            supabase.from("users").select("id, email, username, peran, aktif").not("username", "is", null),
         ]);
         let daftarProfil = profil;
         if (errProfil && /column .*email|schema cache/i.test(String(errProfil.message ?? ""))) {
-            const ulang = await supabase.from("profil").select("id, nama_lengkap, nomor_telepon").eq("peran", "orang_tua").order("nama_lengkap").limit(200);
+            const ulang = await supabase.from("users").select("id, nama_lengkap, nomor_telepon").eq("peran", "orang_tua").order("nama_lengkap").limit(200);
             daftarProfil = ulang.data;
         }
         setWali((_a = daftarProfil) !== null && _a !== void 0 ? _a : []);
@@ -65,7 +65,7 @@ export default function SantriPage() {
         setPetaSantri(peta);
         const petaAkun = {};
         ((_c = akun) !== null && _c !== void 0 ? _c : []).forEach((a) => {
-            petaAkun[a.id_profil] = a;
+            petaAkun[a.id] = a;
         });
         setAkunWali(petaAkun);
         setLoadingWali(false);
@@ -102,11 +102,11 @@ export default function SantriPage() {
             alert(`Wali ini masih tertaut ke ${anak.length} santri (${anak.join(", ")}). Lepaskan tautannya dulu di tab Data Santri.`);
             return;
         }
-        if (!confirm(`Hapus data wali "${w.nama_lengkap ?? "(tanpa nama)"}"? Akun login (jika ada) tidak ikut terhapus.`))
+        if (!confirm(`Hapus data wali "${w.nama_lengkap ?? "(tanpa nama)"}"? Akun login (jika ada) ikut terhapus.`))
             return;
         try {
             const supabase = createClient();
-            const { data: terhapus, error } = await supabase.from("profil").delete().eq("id", w.id).select("id");
+            const { data: terhapus, error } = await supabase.from("users").delete().eq("id", w.id).select("id");
             if (error)
                 throw error;
             if (!(terhapus !== null && terhapus !== void 0 ? terhapus : []).length)
@@ -123,7 +123,7 @@ export default function SantriPage() {
         return (!k ||
             s.nama_santri.toLowerCase().includes(k) ||
             ((_a = s.nis) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes(k)) ||
-            ((_c = (_b = s.profil) === null || _b === void 0 ? void 0 : _b.nama_lengkap) === null || _c === void 0 ? void 0 : _c.toLowerCase().includes(k)));
+            ((_c = (_b = s.users) === null || _b === void 0 ? void 0 : _b.nama_lengkap) === null || _c === void 0 ? void 0 : _c.toLowerCase().includes(k)));
     });
     const tampilWali = wali.filter((w) => {
         var _a, _b, _c;
@@ -171,7 +171,7 @@ export default function SantriPage() {
       </div>
 
       {tab === "santri" ? (<>
-          <Card className="flex flex-col gap-3 sm:flex-row">
+          <Card className="rounded-2xl border border-fisa-100 bg-white p-5 shadow-sm flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
               <Input placeholder="Cari nama / NIS / wali…" value={cari} onChange={(e) => setCari(e.target.value)} className="pl-10"/>
@@ -184,106 +184,110 @@ export default function SantriPage() {
             </Select>
           </Card>
 
-          <Card className="p-0">
-            {loading ? (<div className="space-y-2 p-5">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12"/>)}</div>) : (<div className="overflow-x-auto">
-                <table className="w-full min-w-3xl text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-fisa-100 bg-fisa-50/60 text-xs uppercase text-fisa-500">
-                      <th className="px-5 py-3">Nama Santri</th>
-                      <th className="px-5 py-3">NIS</th>
-                      <th className="px-5 py-3">Tingkatan</th>
-                      <th className="px-5 py-3">Domisili</th>
-                      <th className="px-5 py-3">Wali</th>
-                      <th className="px-5 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tampil.map((s) => {
-                    var _a, _b, _c;
-                    return (<tr key={s.id} className="border-b border-fisa-50 last:border-0 hover:bg-fisa-50/50">
-                        <td className="px-5 py-3 font-bold text-fisa-900">{s.nama_santri}</td>
-                        <td className="px-5 py-3 text-fisa-700">{(_a = s.nis) !== null && _a !== void 0 ? _a : "-"}</td>
-                        <td className="px-5 py-3">
-                          <span className="rounded-full bg-fisa-100 px-2.5 py-1 text-xs font-bold text-fisa-800">
-                            {labelTingkatan(s.tingkatan)}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 text-fisa-700">{s.luar_kota ? "Luar kota" : "Lokal"}</td>
-                        <td className="px-5 py-3 text-fisa-700">{(_c = (_b = s.profil) === null || _b === void 0 ? void 0 : _b.nama_lengkap) !== null && _c !== void 0 ? _c : <span className="font-semibold text-amber-600">Belum ditautkan</span>}</td>
-                        <td className="px-5 py-3">
-                          <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => setSunting(s)}>
-                              <Pencil size={14}/>
-                            </Button>
-                            <Button size="sm" variant="danger" onClick={() => hapus(s.id, s.nama_santri)}>
-                              <Trash2 size={14}/>
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>);
-                })}
-                  </tbody>
-                </table>
-                {tampil.length === 0 && (<p className="p-10 text-center text-sm text-fisa-500">Belum ada data santri.</p>)}
-              </div>)}
-          </Card>
-        </>) : (<>
-          <Card className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
-              <Input placeholder="Cari nama / nomor / email wali…" value={cariWali} onChange={(e) => setCariWali(e.target.value)} className="pl-10"/>
-            </div>
-          </Card>
-
-          <Card className="p-0">
-            {loadingWali ? (<div className="space-y-2 p-5">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-12"/>)}</div>) : (<div className="overflow-x-auto">
-                <table className="w-full min-w-3xl text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-fisa-100 bg-fisa-50/60 text-xs uppercase text-fisa-500">
-                      <th className="px-5 py-3">Nama Wali</th>
-                      <th className="px-5 py-3">Nomor Telepon</th>
-                      <th className="px-5 py-3">Email</th>
-                      <th className="px-5 py-3">Santri Tertaut</th>
-                      <th className="px-5 py-3">Akun Login</th>
-                      <th className="px-5 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tampilWali.map((w) => {
-                    var _a, _b, _c, _d;
-                    const anak = (_a = petaSantri[w.id]) !== null && _a !== void 0 ? _a : [];
-                    const akun = akunWali[w.id];
-                    return (<tr key={w.id} className="border-b border-fisa-50 last:border-0 hover:bg-fisa-50/50">
-                          <td className="px-5 py-3 font-bold text-fisa-900">{(_b = w.nama_lengkap) !== null && _b !== void 0 ? _b : "(tanpa nama)"}</td>
-                          <td className="px-5 py-3 text-fisa-700">{(_c = w.nomor_telepon) !== null && _c !== void 0 ? _c : "-"}</td>
-                          <td className="px-5 py-3 text-fisa-700">{(_d = w.email) !== null && _d !== void 0 ? _d : "-"}</td>
-                          <td className="px-5 py-3 text-fisa-700">
-                            {anak.length === 0 ? (<span className="font-semibold text-amber-600">Belum ada santri tertaut</span>) : (anak.join(", "))}
+          <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm p-0">
+            {loading ? (<div className="p-5">
+                {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12"/>)}
+              </div>) : (<div className="overflow-x-auto p-4">
+                  <table className="w-full min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-fisa-100 bg-gradient-to-r from-fisa-50 to-slate-50 text-xs font-bold uppercase tracking-wide text-fisa-600">
+                        <th className="px-5 py-3.5 font-semibold">Nama Santri</th>
+                        <th className="px-5 py-3.5 font-semibold">NIS</th>
+                        <th className="px-5 py-3.5 font-semibold">Tingkatan</th>
+                        <th className="px-5 py-3.5 font-semibold">Domisili</th>
+                        <th className="px-5 py-3.5 font-semibold">Wali</th>
+                        <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tampil.map((s, idx) => {
+                      var _a, _b, _c;
+                      return (<tr key={s.id} className={`border-b border-fisa-50 last:border-0 transition-colors hover:bg-fisa-50/60 ${idx % 2 === 0 ? "bg-white" : "bg-fisa-25"}`}>
+                          <td className="px-5 py-3 font-bold text-fisa-900">{s.nama_santri}</td>
+                          <td className="px-5 py-3 text-fisa-700">{(_a = s.nis) !== null && _a !== void 0 ? _a : "-"}</td>
+                          <td className="px-5 py-3">
+                            <span className="inline-flex items-center rounded-full bg-fisa-100 px-2.5 py-1 text-[11px] font-bold text-fisa-800">
+                              {labelTingkatan(s.tingkatan)}
+                            </span>
                           </td>
-                          <td className="px-5 py-3 text-fisa-700">
-                            {akun ? (<span className="font-semibold text-fisa-800">{akun.username}</span>) : (<span className="font-semibold text-amber-600">Belum ada</span>)}
-                          </td>
-                          <td className="px-5 py-3 text-right">
+                          <td className="px-5 py-3 text-fisa-700">{s.luar_kota ? "Luar kota" : "Lokal"}</td>
+                          <td className="px-5 py-3 text-fisa-700">{(_c = (_b = s.users) === null || _b === void 0 ? void 0 : _b.nama_lengkap) !== null && _c !== void 0 ? _c : <span className="font-semibold text-amber-600">Belum ditautkan</span>}</td>
+                          <td className="px-5 py-3">
                             <div className="flex justify-end gap-2">
-                              <Button size="sm" variant="outline" onClick={() => setModalAkun(w)} title="Atur akun login mobile">
-                                <KeyRound size={14}/> Akun
+                              <Button size="sm" variant="outline" onClick={() => setSunting(s)}>
+                                <Pencil size={14}/>
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => setSuntingWali(w)}>
-                                <Pencil size={14}/> Edit
-                              </Button>
-                              <Button size="sm" variant="danger" onClick={() => hapusWali(w)} title="Hapus data wali">
+                              <Button size="sm" variant="danger" onClick={() => hapus(s.id, s.nama_santri)}>
                                 <Trash2 size={14}/>
                               </Button>
                             </div>
                           </td>
                         </tr>);
                 })}
-                  </tbody>
-                </table>
-                {tampilWali.length === 0 && (<p className="p-10 text-center text-sm text-fisa-500">
-                    Belum ada data wali. Klik Tambah Wali untuk mendata orang tua/wali santri.
+                    </tbody>
+                  </table>
+                  {tampil.length === 0 && (<p className="p-5 text-center text-sm text-fisa-500">Belum ada data santri.</p>)}
+                </div>)}
+          </Card>
+        </>) : (<>
+          <Card className="rounded-2xl border border-fisa-100 bg-white p-5 shadow-sm flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+              <Input placeholder="Cari nama / nomor / email wali…" value={cariWali} onChange={(e) => setCariWali(e.target.value)} className="pl-10"/>
+            </div>
+          </Card>
+
+          <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm p-0">
+            {loadingWali ? (<div className="p-5">
+                {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12"/>)}
+              </div>) : (<div className="overflow-x-auto p-4">
+                  <table className="w-full min-w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-fisa-100 bg-gradient-to-r from-fisa-50 to-slate-50 text-xs font-bold uppercase tracking-wide text-fisa-600">
+                        <th className="px-5 py-3.5 font-semibold">Nama Wali</th>
+                        <th className="px-5 py-3.5 font-semibold">Nomor Telepon</th>
+                        <th className="px-5 py-3.5 font-semibold">Email</th>
+                        <th className="px-5 py-3.5 font-semibold">Santri Tertaut</th>
+                        <th className="px-5 py-3.5 font-semibold">Akun Login</th>
+                        <th className="px-5 py-3.5 text-right font-semibold">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tampilWali.map((w, idx) => {
+                      var _a, _b, _c, _d;
+                      const anak = (_a = petaSantri[w.id]) !== null && _a !== void 0 ? _a : [];
+                      const akun = akunWali[w.id];
+                      return (<tr key={w.id} className={`border-b border-fisa-50 last:border-0 transition-colors hover:bg-emerald-50/40 ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"}`}>
+                            <td className="px-5 py-3 font-bold text-fisa-900">{(_b = w.nama_lengkap) !== null && _b !== void 0 ? _b : "(tanpa nama)"}</td>
+                            <td className="px-5 py-3 text-fisa-700">{(_c = w.nomor_telepon) !== null && _c !== void 0 ? _c : "-"}</td>
+                            <td className="px-5 py-3 text-fisa-700">{(_d = w.email) !== null && _d !== void 0 ? _d : "-"}</td>
+                            <td className="px-5 py-3 text-fisa-700">
+                              {anak.length === 0 ? (<span className="font-semibold text-amber-600">Belum ada santri tertaut</span>) : (anak.join(", "))}
+                            </td>
+                            <td className="px-5 py-3 text-fisa-700">
+                              {akun ? (<span className="font-semibold text-fisa-800">{akun.email ?? akun.username}</span>) : (<span className="font-semibold text-amber-600">Belum ada</span>)}
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button size="sm" variant="outline" onClick={() => setModalAkun(w)} title="Atur akun login mobile">
+                                  <KeyRound size={14}/> Akun
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setSuntingWali(w)}>
+                                  <Pencil size={14}/> Edit
+                                </Button>
+                                <Button size="sm" variant="danger" onClick={() => hapusWali(w)} title="Hapus data wali">
+                                  <Trash2 size={14}/>
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>);
+                })}
+                    </tbody>
+                  </table>
+                  {tampilWali.length === 0 && (<p className="p-5 text-center text-sm text-fisa-500">
+                      Belum ada data wali. Klik Tambah Wali untuk mendata orang tua/wali santri.
                   </p>)}
-              </div>)}
+                </div>)}
           </Card>
         </>)}
 

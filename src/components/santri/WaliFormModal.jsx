@@ -3,29 +3,14 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { pesanGalatDb } from "@/lib/utils";
 import { Button, Input, Label, Modal } from "@/components/ui";
-import { Loader2 } from "lucide-react";
-
-/** UUID v4 untuk id baris profil. Wali tidak wajib punya akun login. */
-function uuidBaru() {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
-        return crypto.randomUUID();
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0;
-        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-    });
-}
+import { Info, Loader2, Mail, Phone, UserRound } from "lucide-react";
 
 const POLA_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Input wali cukup nama, nomor telepon, dan email — tidak perlu menyalin UUID
- * dari Authentication Supabase. Id profil dibuat otomatis.
- * Wali yang memang punya akun aplikasi mobile tetap bisa login karena
- * id profilnya sama dengan id user di Authentication.
- *
- * Catatan: bila database masih mengikat profil.id ke auth.users,
- * jalankan supabase/migrasi_wali_mandiri.sql sekali saja.
- * Kolom email: jalankan supabase/migrasi_email_wali.sql.
+ * Input wali cukup nama, nomor telepon, dan email — tidak perlu menyalin UUID.
+ * Wali disimpan di tabel `users` (peran orang_tua) tanpa akun login.
+ * Akun login dibuat belakangan lewat tombol "Akun" pada baris wali.
  */
 export function WaliFormModal({ awal, onClose, onSelesai, }) {
     var _a, _b, _c;
@@ -56,10 +41,8 @@ export function WaliFormModal({ awal, onClose, onSelesai, }) {
                 email: emailIsi || null,
             };
             if (!sunting) {
-                const { error: errInsert } = await supabase.from("profil").insert({
-                    id: uuidBaru(),
+                const { error: errInsert } = await supabase.from("users").insert({
                     peran: "orang_tua",
-                    dibuat_pada: new Date().toISOString(),
                     ...isi,
                 });
                 if (errInsert)
@@ -67,7 +50,7 @@ export function WaliFormModal({ awal, onClose, onSelesai, }) {
             }
             else {
                 const { error: errUpdate } = await supabase
-                    .from("profil")
+                    .from("users")
                     .update(isi)
                     .eq("id", awal.id);
                 if (errUpdate)
@@ -78,7 +61,7 @@ export function WaliFormModal({ awal, onClose, onSelesai, }) {
         catch (err) {
             const msg = String((err && err.message) || "");
             if (/column .*email|schema cache/i.test(msg)) {
-                setError("Kolom email belum ada di tabel profil. Jalankan supabase/migrasi_email_wali.sql di SQL Editor Supabase, lalu coba lagi.");
+                setError("Kolom email belum ada di tabel users. Jalankan supabase/migrasi_users_menggantikan_profil.sql di SQL Editor Supabase, lalu coba lagi.");
             }
             else {
                 setError(pesanGalatDb(err, "Gagal menyimpan data wali."));
@@ -89,30 +72,55 @@ export function WaliFormModal({ awal, onClose, onSelesai, }) {
         }
     }
     return (<Modal open onClose={onClose} title={sunting ? "Edit Data Wali" : "Tambah Wali"}>
-      {error && (<div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>)}
+      <p className="-mt-1 mb-5 text-sm leading-relaxed text-fisa-600">
+        {sunting
+            ? "Perbarui data wali. Perubahan langsung dipakai di data santri dan akun login mobile."
+            : "Lengkapi data orang tua/wali. Setelah disimpan, santri bisa ditautkan ke wali ini."}
+      </p>
+
+      {error && (<div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <Info size={16} className="mt-0.5 shrink-0"/>
+          <span>{error}</span>
+        </div>)}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label>Nama Lengkap Wali</Label>
-          <Input required value={nama} onChange={(e) => setNama(e.target.value)} placeholder="cth: H. Abdullah"/>
+          <div className="relative">
+            <UserRound size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+            <Input autoFocus required value={nama} onChange={(e) => setNama(e.target.value)} placeholder="cth: H. Abdullah" className="pl-10"/>
+          </div>
         </div>
-        <div>
-          <Label>Nomor Telepon / WA</Label>
-          <Input value={telepon} onChange={(e) => setTelepon(e.target.value)} placeholder="cth: 081234567890"/>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>Nomor Telepon / WA</Label>
+            <div className="relative">
+              <Phone size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+              <Input type="tel" inputMode="tel" value={telepon} onChange={(e) => setTelepon(e.target.value)} placeholder="cth: 081234567890" className="pl-10"/>
+            </div>
+          </div>
+          <div>
+            <Label>Alamat Email</Label>
+            <div className="relative">
+              <Mail size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cth: abdullah@email.com" autoComplete="off" className="pl-10"/>
+            </div>
+          </div>
         </div>
-        <div>
-          <Label>Alamat Email</Label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cth: abdullah@email.com" autoComplete="off"/>
+
+        <div className="flex gap-2.5 rounded-xl border border-fisa-100 bg-fisa-50/70 p-3.5 text-xs leading-relaxed text-fisa-600">
+          <Info size={16} className="mt-0.5 shrink-0 text-fisa-600"/>
+          <p>
+           Akun belum diperlukan. Simpan data sekarang, tautkan santri ke wali di menu Data Santri, lalu buat akun aplikasi mobile melalui tombol Akun pada tabel wali.
+          </p>
         </div>
-        <p className="rounded-xl bg-fisa-50 p-3 text-xs leading-relaxed text-fisa-600">
-          Tidak perlu akun Supabase. Setelah disimpan, tautkan santri ke wali ini
-          lewat tab <b>Data Santri → Edit</b>. Untuk membuat login aplikasi mobile,
-          klik tombol <b>Akun</b> pada baris wali. Email tersimpan di data profil wali.
-        </p>
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-          <Button type="submit" disabled={simpan}>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-fisa-100 pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={onClose} className="sm:min-w-24">Batal</Button>
+          <Button type="submit" disabled={simpan} className="sm:min-w-32">
             {simpan && <Loader2 size={16} className="animate-spin"/>}
-            {sunting ? "Simpan" : "Tambah Wali"}
+            {sunting ? "Simpan Perubahan" : "Tambah Wali"}
           </Button>
         </div>
       </form>

@@ -129,7 +129,7 @@ export async function buatDokumenKwitansi({ trx, namaVerifikator, nomor }) {
 
   const t = trx ?? {};
   const santri = t.santri ?? {};
-  const wali = t.profil ?? t.orang_tua ?? {};
+  const wali = t.users ?? t.profil ?? t.orang_tua ?? {};
 
   /* ---------- Kop ---------- */
   doc.setFillColor(...FISA_900);
@@ -295,7 +295,7 @@ export async function buatDokumenKwitansi({ trx, namaVerifikator, nomor }) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.3);
   doc.setTextColor(...TEKS);
-  doc.text("Telah diterima dengan MEMADAH dan benar, baik uang maupun barang,", KIRI + 3, y + 5.2);
+  doc.text("Telah diterima dengan sah dan benar, baik uang maupun barang,", KIRI + 3, y + 5.2);
   doc.text(`untuk pembayaran tagihan ${formatBulanTahun(t.bulan_tahun ?? "")}.`, KIRI + 3, y + 9.4);
 
   /* ---------- Tanda tangan ---------- */

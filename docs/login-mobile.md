@@ -1,6 +1,7 @@
 # Login Mobile FISA — Tanpa Supabase Auth
 
-Login wali memakai tabel `public.users` (username/email + password).
+Login wali memakai tabel `public.users` (email + password). Admin membuat akun
+wali dengan email, jadi wali masuk memakai alamat emailnya.
 Token yang dikembalikan adalah JWT yang ditandatangani dengan **JWT Secret**
 Supabase, jadi RLS (`auth.uid()`) tetap berjalan seperti biasa.
 
@@ -9,7 +10,7 @@ Supabase, jadi RLS (`auth.uid()`) tetap berjalan seperti biasa.
 `POST https://<domain-website-fisa>/api/auth/login`
 
 ```json
-{ "username": "abdullah", "password": "rahasia123" }
+{ "username": "wali@gmail.com", "password": "rahasia123" }
 ```
 
 Respons sukses:
@@ -18,15 +19,17 @@ Respons sukses:
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
   "user": {
-    "id": "uuid-profil-wali",
-    "username": "abdullah",
+    "id": "uuid-user-wali",
+    "username": "wali@gmail.com",
     "nama": "H. Abdullah",
     "peran": "orang_tua"
   }
 }
 ```
 
-Respons gagal: `401` dengan `{ "error": "Username/email atau password salah." }`.
+Respons gagal: `401` dengan `{ "error": "Email atau password salah." }`.
+
+> Field JSON tetap bernama `username` agar kompatibel, tetapi isinya **email wali**.
 
 > Akun dibuat admin di website: **Kelola Santri & Wali → tab Data Wali → tombol Akun**.
 
@@ -36,11 +39,11 @@ Respons gagal: `401` dengan `{ "error": "Username/email atau password salah." }`
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-Future<Map<String, dynamic>> loginWali(String username, String password) async {
+Future<Map<String, dynamic>> loginWali(String email, String password) async {
   final res = await http.post(
     Uri.parse('https://<domain-website-fisa>/api/auth/login'),
     headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'username': username, 'password': password}),
+    body: jsonEncode({'username': email, 'password': password}),
   );
   final data = jsonDecode(res.body) as Map<String, dynamic>;
   if (res.statusCode != 200) {
@@ -55,7 +58,7 @@ Future<Map<String, dynamic>> loginWali(String username, String password) async {
 ### Opsi A — SupabaseClient dengan header Authorization
 
 ```dart
-final data = await loginWali(username, password);
+final data = await loginWali(email, password);
 final token = data['token'] as String;
 
 final client = SupabaseClient(

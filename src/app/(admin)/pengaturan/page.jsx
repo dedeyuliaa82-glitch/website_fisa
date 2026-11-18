@@ -1,4 +1,5 @@
 "use client";
+
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -27,13 +28,27 @@ const BANTUAN = {
         ringkas: "Kelola rekening bank atau e-wallet pesantren yang ditampilkan ke wali di aplikasi mobile untuk transfer manual.",
         langkah: [
             "Klik Tambah Rekening, lalu isi nama bank/e-wallet, nomor rekening, dan atas nama.",
-            "Aktifkan sakelar “Tampilkan di aplikasi mobile wali” agar rekening bisa dilihat wali.",
+            "Aktifkan sakelar 'Tampilkan di aplikasi mobile wali' agar rekening bisa dilihat wali.",
             "Gunakan tombol Aktifkan/Non-aktifkan untuk menyembunyikan rekening tanpa menghapusnya.",
             "Klik Edit untuk memperbarui data, atau Hapus untuk membuang rekening yang sudah tidak dipakai.",
         ],
         catatan: "Wali hanya bisa melihat rekening aktif. Tambah, ubah, dan hapus hanya bisa dilakukan admin di halaman ini.",
     },
 };
+
+export default function PengaturanPage() {
+    return (
+      <Suspense fallback={<div className="space-y-5">
+        <div className="flex items-center gap-2">
+          <Wallet size={22} className="text-fisa-700"/>
+          <h1 className="text-2xl font-extrabold text-fisa-900">Pengaturan Finansial</h1>
+        </div>
+        <Card><Skeleton className="h-64"/></Card>
+      </div>}>
+        <PengaturanFinansial />
+      </Suspense>
+    );
+}
 
 function PengaturanFinansial() {
     const router = useRouter();
@@ -64,20 +79,8 @@ function PengaturanFinansial() {
         })}
       </div>
 
-      {tab === "biaya" ? (<div className="mx-auto max-w-4xl">
+      {tab === "biaya" ? (<div className="mx-auto max-w-4xl p-4 sm:p-6">
           <PengaturanBiayaPanel />
         </div>) : (<ManajemenRekeningPanel />)}
     </div>);
-}
-
-export default function PengaturanPage() {
-    return (<Suspense fallback={<div className="space-y-5">
-        <div className="flex items-center gap-2">
-          <Wallet size={22} className="text-fisa-700"/>
-          <h1 className="text-2xl font-extrabold text-fisa-900">Pengaturan Finansial</h1>
-        </div>
-        <Card><Skeleton className="h-64"/></Card>
-      </div>}>
-      <PengaturanFinansial />
-    </Suspense>);
 }

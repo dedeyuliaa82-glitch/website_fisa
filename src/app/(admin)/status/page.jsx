@@ -2,24 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { Button, Card, Skeleton } from "@/components/ui";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { cn } from "@/lib/utils";
 import { CheckCircle2, XCircle, Loader2, Activity, ShieldCheck, FileWarning, ChevronDown } from "lucide-react";
 
 /** Probe otomatis: tabel/kolom ada? (baca head + count, tanpa mengubah data) */
 const PROBE = [
-  { id: "profil", tabel: "profil", kolom: "id,nama_lengkap,peran,nomor_telepon", label: "Tabel profil (admin & wali)", file: "skema awal" },
-  { id: "email_wali", tabel: "profil", kolom: "email", label: "Kolom email profil wali", file: "supabase/migrasi_email_wali.sql" },
-  { id: "users", tabel: "users", kolom: "id,id_profil,username,peran,aktif", label: "Tabel users (login website & mobile)", file: "supabase/migrasi_users.sql" },
+  { id: "users", tabel: "users", kolom: "id,username,nama_lengkap,nomor_telepon,email,peran,aktif", label: "Tabel users (login & data wali/admin)", file: "supabase/migrasi_users_menggantikan_profil.sql" },
   { id: "santri", tabel: "santri", kolom: "id,id_orang_tua,nama_santri,nis,tingkatan,luar_kota", label: "Tabel santri", file: "skema awal" },
   { id: "transaksi", tabel: "transaksi", kolom: "id,id_santri,bulan_tahun,total_bayar,status", label: "Tabel transaksi", file: "skema awal" },
   { id: "pengaturan", tabel: "pengaturan_biaya", kolom: "id,harga_beras_10kg", label: "Acuan harga beras", file: "skema awal" },
   { id: "acuan", tabel: "pengaturan_biaya", kolom: "spp_smp,spp_smk,spp_takhosus,uang_makan,syahriah", label: "Kolom acuan SPP/makan/syahriah", file: "supabase/migrasi_acuan_biaya.sql" },
   { id: "audit", tabel: "transaksi", kolom: "diverifikasi_oleh,diverifikasi_pada", label: "Kolom audit verifikator", file: "supabase/migrasi_audit_validasi.sql" },
   { id: "metode", tabel: "transaksi", kolom: "metode_pembayaran,total_bayar", label: "Kolom metode pembayaran", file: "supabase/migrasi_metode_pembayaran.sql" },
-  { id: "tagihan", tabel: "tagihan", kolom: "id,id_santri,bulan_tahun,total_tagihan,total_dibayar,status", label: "Tabel tagihan bulanan", file: "supabase/migrasi_tagihan.sql" },
-  { id: "rekening", tabel: "rekening_pesantren", kolom: "id,nama_bank,nomor_rekening,atas_nama,is_active", label: "Tabel rekening pesantren", file: "supabase/migrasi_rekening.sql" },
+  { id: "tagihan", tabel: "tagihan", kolom: "id,id_santri,bulan_tahun,total_tagihan,total_dibayar,status", label: "Tabel tagihan bulanan", file: "skema awal" },
+  { id: "rekening", tabel: "rekening_pesantren", kolom: "id,nama_bank,nomor_rekening,atas_nama,is_active", label: "Tabel rekening pesantren", file: "skema awal" },
 ];
 
 /** Tidak bisa dicek otomatis — diverifikasi manual di dashboard Supabase */
@@ -32,7 +30,7 @@ const MANUAL = [
   { label: "Fungsi buat_tagihan_bulanan", cara: "Jalankan supabase/migrasi_tagihan.sql agar tagihan bulanan bisa dibuat otomatis." },
   { label: "Izin hapus data admin", cara: "Jalankan supabase/migrasi_hapus_admin.sql agar tombol hapus di semua halaman berfungsi." },
   { label: "Input wali tanpa UUID", cara: "Jalankan supabase/migrasi_wali_mandiri.sql agar wali bisa didata hanya dengan nama & nomor telepon (tanpa akun Supabase)." },
-  { label: "Email wali di tabel profil", cara: "Jalankan supabase/migrasi_email_wali.sql agar form Tambah Wali bisa menyimpan alamat email." },
+  { label: "Data wali di tabel users", cara: "Jalankan supabase/migrasi_users_menggantikan_profil.sql agar tabel users menyimpan nama, email, dan nomor telepon wali." },
   { label: "JWT secret login mandiri", cara: "Isi SUPABASE_JWT_SECRET di .env.local (Supabase → Project Settings → API → JWT Settings) agar login website & mobile berfungsi." },
   { label: "RLS rekening pesantren", cara: "Jalankan supabase/migrasi_rekening.sql agar admin bisa mengelola rekening dan wali hanya melihat rekening aktif (is_active = true)." },
 ];
@@ -89,9 +87,11 @@ export default function StatusPage() {
         </div>
       )}
 
-      <Card className="p-0">
+      <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm">
         {loading ? (
-          <div className="space-y-2 p-5">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}</div>
+          <div className="p-8 text-center">
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}
+          </div>
         ) : (
           <ul className="divide-y divide-fisa-50">
             {PROBE.map((p) => {
@@ -119,17 +119,17 @@ export default function StatusPage() {
         )}
       </Card>
 
-      <Card>
-        <details className="group">
+      <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm">
+        <details className="group p-5">
           <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
             <ShieldCheck size={18} className="text-fisa-700" />
             <h2 className="font-extrabold text-fisa-900">Cek Manual (tidak bisa otomatis)</h2>
             <span className="ml-auto text-xs font-semibold text-fisa-500">{MANUAL.length} item</span>
             <ChevronDown size={16} className="text-fisa-500 transition group-open:rotate-180" />
           </summary>
-          <ul className="mt-3 space-y-2.5">
+          <ul className="mt-4 space-y-2.5">
             {MANUAL.map((m) => (
-              <li key={m.label} className="rounded-xl bg-fisa-50 p-3 text-sm">
+              <li key={m.label} className="rounded-xl bg-fisa-50 p-4 text-sm">
                 <p className="font-extrabold text-fisa-900">{m.label}</p>
                 <p className="text-xs text-fisa-600">{m.cara}</p>
               </li>

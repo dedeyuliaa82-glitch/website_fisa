@@ -7,16 +7,6 @@ import { Upload, Loader2, FileSpreadsheet } from "lucide-react";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** UUID v4 untuk id baris profil wali baru. */
-function uuidBaru() {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
-        return crypto.randomUUID();
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0;
-        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-    });
-}
-
 /**
  * Impor massal santri dari CSV.
  * Format header: nama_santri,nis,tingkatan,luar_kota,wali
@@ -68,7 +58,7 @@ export function ImportCsvModal({ onClose, onSelesai }) {
                 throw new Error(`${tanpaWali.length} baris belum diisi nama wali.`);
             const supabase = createClient();
             const { data: profil, error: errProfil } = await supabase
-                .from("profil")
+                .from("users")
                 .select("id, nama_lengkap")
                 .eq("peran", "orang_tua")
                 .limit(500);
@@ -85,8 +75,8 @@ export function ImportCsvModal({ onClose, onSelesai }) {
                     .filter((n) => !UUID_RE.test(n) && !peta.has(n.toLowerCase())))];
             for (const namaWali of waliBaru) {
                 const { data, error } = await supabase
-                    .from("profil")
-                    .insert({ id: uuidBaru(), nama_lengkap: namaWali, peran: "orang_tua", dibuat_pada: new Date().toISOString() })
+                    .from("users")
+                    .insert({ nama_lengkap: namaWali, peran: "orang_tua" })
                     .select("id")
                     .single();
                 if (error)
