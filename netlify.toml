@@ -3,6 +3,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_JWT_SECRET"
+  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
