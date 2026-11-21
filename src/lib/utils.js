@@ -48,7 +48,14 @@ export function labelMetode(m) {
  * ditindaklanjuti pengelola, bukan kode mentah.
  */
 export function pesanGalatDb(err, fallback = "Gagal menyimpan.") {
-    const msg = err instanceof Error ? err.message : String(err ?? "");
+    let msg = "";
+    if (err instanceof Error) {
+        msg = err.message;
+    } else if (err && typeof err === "object") {
+        msg = err.message ?? err.error ?? JSON.stringify(err) ?? "";
+    } else {
+        msg = String(err ?? "");
+    }
     if (/melebihi tagihan/i.test(msg))
         return "Nominal melebihi sisa tagihan. Kurangi jumlahnya atau periksa tagihan bulan tersebut.";
     if (/tagihan/i.test(msg) && /does not exist|schema cache/i.test(msg))

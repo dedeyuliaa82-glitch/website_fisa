@@ -108,8 +108,8 @@ export default function CatatPembayaranPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-3xl text-left text-sm">
+            <div className="overflow-x-auto p-4">
+              <table className="w-full min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-fisa-100 bg-fisa-50/60 text-xs uppercase text-fisa-500">
                     <th className="px-5 py-3">Santri</th>

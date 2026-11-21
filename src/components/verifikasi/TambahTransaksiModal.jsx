@@ -1,11 +1,10 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { idPengguna } from "@/lib/auth/client";
 import { bulanBerjalan, formatBulanTahun, formatRupiah, labelTingkatan, pesanGalatDb } from "@/lib/utils";
-import { Button, Input, Label, Modal, Select } from "@/components/ui";
-import { Loader2, Plus, Search, Sparkles } from "lucide-react";
+import { Button, Card, Input, Label, Modal, Select } from "@/components/ui";
+import { Loader2, Plus, Search, Sparkles, Wheat, UserRound, Calendar, CreditCard } from "lucide-react";
 
 /** Admin hanya mencatat uang tunai dan setoran beras fisik.
  *  Transfer/bukti pembayaran masuk lewat upload orang tua di app mobile. */
@@ -48,7 +47,6 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
     })();
   }, []);
 
-  // Sisa tagihan santri+bulan terpilih
   useEffect(() => {
     if (!santriId || !bulan) return;
     let hidup = true;
@@ -89,8 +87,6 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
     return !k || s.nama_santri.toLowerCase().includes(k) || (s.nis ?? "").toLowerCase().includes(k);
   });
 
-  // Nominal acuan bila tagihan belum dibuat.
-  // Takhosus hanya membayar syahriah (tanpa SPP/makan/beras).
   const acuanNom = (() => {
     if (!santri || !acuan) return { ...KOSONG };
     const sppKey = santri.tingkatan === "smp" ? "spp_smp" : "spp_smk";
@@ -124,7 +120,6 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
   const hargaBeras = Number(acuan?.harga_beras_10kg ?? 0);
   const nilaiBeras = hargaBeras * (Number(karung) || 0);
 
-  // Uang diterima admin. Beras fisik = 0 rupiah (dinilai terpisah).
   const total = metode === "beras_fisik" ? 0 : nom.spp + nom.makan + nom.syahriah + nom.beras;
   const settle = metode === "beras_fisik" ? nilaiBeras : total;
 
@@ -208,14 +203,16 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
   const konten = (
     <>
       {error && (
-        <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <span>{error}</span>
+        </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <Label>Santri yang membayar</Label>
           <div className="relative">
-            <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400" />
-            <Input value={cari} onChange={(e) => setCari(e.target.value)} placeholder="Ketik nama / NIS…" className="pl-10" />
+            <UserRound size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+            <Input value={cari} onChange={(e) => setCari(e.target.value)} placeholder="Ketik nama / NIS…" className="pl-10"/>
           </div>
           {cari && (
             <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-fisa-100">
@@ -238,13 +235,16 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>Bulan Tagihan</Label>
-            <Input type="month" required value={bulan} onChange={(e) => setBulan(e.target.value)} />
+            <div className="relative">
+              <Calendar size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+              <Input type="month" required value={bulan} onChange={(e) => setBulan(e.target.value)} className="pl-10"/>
+            </div>
           </div>
           <div>
-            <Label>Metode</Label>
+            <Label>Metode Pembayaran</Label>
             <Select value={metode} onChange={(e) => setMetode(e.target.value)}>
               {metodeTersedia.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -254,44 +254,48 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
         </div>
 
         {santriId && (
-          <div className="rounded-xl border border-fisa-100 bg-fisa-50 p-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-fisa-600">Tagihan {formatBulanTahun(bulan)}</span>
-              <span className="font-extrabold text-fisa-900">{formatRupiah(totalTagihan)}</span>
+          <Card className="p-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-fisa-600">Tagihan {formatBulanTahun(bulan)}</span>
+                <span className="font-extrabold text-fisa-900">{formatRupiah(totalTagihan)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-fisa-600">Sudah dibayar</span>
+                <span className="font-bold text-emerald-700">{formatRupiah(totalDibayarLama)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-fisa-200 pt-1">
+                <span className="font-extrabold text-fisa-900">Sisa</span>
+                <span className="font-extrabold text-amber-700">{formatRupiah(sisaTotal)}</span>
+              </div>
+              {!tagihan && (
+                <p className="mt-2 text-xs font-medium text-fisa-500">
+                  Tagihan bulan ini belum dibuat — nominal memakai acuan tingkatan dan akan dibuat otomatis saat disimpan.
+                </p>
+              )}
+              {tagihan?.status === "lunas" && (
+                <p className="mt-2 text-xs font-bold text-emerald-700">Tagihan bulan ini sudah LUNAS.</p>
+              )}
             </div>
-            <div className="mt-1 flex items-center justify-between">
-              <span className="font-semibold text-fisa-600">Sudah dibayar</span>
-              <span className="font-bold text-emerald-700">{formatRupiah(totalDibayarLama)}</span>
-            </div>
-            <div className="mt-1 flex items-center justify-between border-t border-fisa-200 pt-1">
-              <span className="font-extrabold text-fisa-900">Sisa</span>
-              <span className="font-extrabold text-amber-700">{formatRupiah(sisaTotal)}</span>
-            </div>
-            {!tagihan && (
-              <p className="mt-2 text-xs font-medium text-fisa-500">
-                Tagihan bulan ini belum dibuat — nominal memakai acuan tingkatan dan akan dibuat otomatis saat disimpan.
-              </p>
-            )}
-            {tagihan?.status === "lunas" && (
-              <p className="mt-2 text-xs font-bold text-emerald-700">Tagihan bulan ini sudah LUNAS.</p>
-            )}
-          </div>
+          </Card>
         )}
 
         {metode === "beras_fisik" ? (
-          <div className="space-y-3">
-            <div>
-              <Label>Jumlah karung (10 kg)</Label>
-              <Input type="number" min={1} value={karung} onChange={(e) => setKarung(e.target.value)} />
+          <Card className="p-4">
+            <div className="space-y-3">
+              <div>
+                <Label>Jumlah karung (10 kg)</Label>
+                <Input type="number" min={1} value={karung} onChange={(e) => setKarung(e.target.value)} />
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-fisa-800 p-3 text-sm text-white">
+                <span className="font-bold">Nilai beras diserahkan</span>
+                <span className="font-extrabold">{formatRupiah(nilaiBeras)}</span>
+              </div>
+              <p className="text-xs text-fisa-500">
+                Setoran beras dinilai dari Harga Beras 10 Kg di Pengaturan Biaya, bukan uang masuk.
+              </p>
             </div>
-            <div className="flex items-center justify-between rounded-xl bg-fisa-800 p-3 text-sm text-white">
-              <span className="font-bold">Nilai beras diserahkan</span>
-              <span className="font-extrabold">{formatRupiah(nilaiBeras)}</span>
-            </div>
-            <p className="text-xs text-fisa-500">
-              Setoran beras dinilai dari Harga Beras 10 Kg di Pengaturan Biaya, bukan uang masuk.
-            </p>
-          </div>
+          </Card>
         ) : (
           <>
             <div className="flex items-center justify-between">
@@ -300,7 +304,7 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
                 <Sparkles size={13} /> Isi sisa tagihan
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3">
               {[["spp", "SPP"], ["makan", "Uang makan"], ["syahriah", "Syahriah"], ["beras", "Beras"]]
                 .filter(([k]) => !tahkosus || k === "syahriah")
                 .map(([k, label]) => (
@@ -327,9 +331,9 @@ export function TambahTransaksiModal({ onClose, onSelesai, inline }) {
           </>
         )}
 
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <Button type="button" variant="outline" onClick={inline ? resetForm : onClose}>Batal</Button>
-          <Button type="submit" disabled={simpan || sisaTotal <= 0.5}>
+        <div className="flex flex-col-reverse gap-2 border-t border-fisa-100 pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={inline ? resetForm : onClose} className="sm:min-w-24">Batal</Button>
+          <Button type="submit" disabled={simpan || sisaTotal <= 0.5} className="sm:min-w-32">
             {simpan ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
             Catat Bayar
           </Button>

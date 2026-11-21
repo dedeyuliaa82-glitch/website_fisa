@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button, Input, Label, Modal, Select, Switch } from "@/components/ui";
+import { cn, labelTingkatan } from "@/lib/utils";
+import { Button, Card, Input, Label, Modal, Select, Switch } from "@/components/ui";
 import { TINGKATAN_OPTIONS } from "@/lib/constants";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserRound, Hash, GraduationCap, Building2, UserPlus } from "lucide-react";
 export function SantriFormModal({ awal, onClose, onSelesai, }) {
     var _a, _b, _c, _d, _e;
     const sunting = !!awal;
@@ -15,9 +16,6 @@ export function SantriFormModal({ awal, onClose, onSelesai, }) {
     const [daftarWali, setDaftarWali] = useState([]);
     const [simpan, setSimpan] = useState(false);
     const [error, setError] = useState("");
-    // Muat daftar wali (peran = orang_tua) untuk dropdown.
-    // Kolom santri.id_orang_tua di database bersifat WAJIB (NOT NULL),
-    // jadi setiap santri harus ditautkan ke satu data wali.
     useEffect(() => {
         (async () => {
             const supabase = createClient();
@@ -76,16 +74,24 @@ export function SantriFormModal({ awal, onClose, onSelesai, }) {
         }
     }
     return (<Modal open onClose={onClose} title={sunting ? "Edit Santri" : "Tambah Santri"}>
-      {error && (<div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>)}
+      {error && (<div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <span>{error}</span>
+        </div>)}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label>Nama Santri</Label>
-          <Input required value={nama} onChange={(e) => setNama(e.target.value)} placeholder="cth: Ahmad Fauzi"/>
+          <div className="relative">
+            <UserRound size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+            <Input autoFocus required value={nama} onChange={(e) => setNama(e.target.value)} placeholder="cth: Ahmad Fauzi" className="pl-10"/>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>NIS</Label>
-            <Input value={nis} onChange={(e) => setNis(e.target.value)} placeholder="Nomor induk"/>
+            <div className="relative">
+              <Hash size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+              <Input value={nis} onChange={(e) => setNis(e.target.value)} placeholder="Nomor induk" className="pl-10"/>
+            </div>
           </div>
           <div>
             <Label>Tingkatan</Label>
@@ -94,31 +100,35 @@ export function SantriFormModal({ awal, onClose, onSelesai, }) {
             </Select>
           </div>
         </div>
-        <div className="rounded-xl bg-fisa-50 p-3">
-          <Switch checked={luarKota} onChange={setLuarKota} label={luarKota ? "Santri luar kota (beras diganti uang)" : "Santri lokal (wajib setor beras fisik)"}/>
+        <div className="flex items-center gap-2 rounded-xl border border-fisa-100 bg-fisa-50/70 p-3.5">
+          <Building2 size={18} className="shrink-0 text-fisa-600"/>
+          <Switch checked={luarKota} onChange={setLuarKota} label={luarKota ? "Luar kota (beras diganti uang)" : "Lokal (wajib setor beras fisik)"}/>
         </div>
         <div>
           <Label>Wali Santri (wajib)</Label>
-          <Select required value={waliId} onChange={(e) => setWaliId(e.target.value)}>
-            <option value="">— Pilih wali —</option>
-            {daftarWali.map((w) => {
-            var _a;
-            return (<option key={w.id} value={w.id}>
-                {(_a = w.nama_lengkap) !== null && _a !== void 0 ? _a : "(tanpa nama)"}{w.nomor_telepon ? ` • ${w.nomor_telepon}` : ""}
-              </option>);
-        })}
-          </Select>
+          <div className="relative">
+            <UserPlus size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+            <Select required value={waliId} onChange={(e) => setWaliId(e.target.value)}>
+              <option value="">— Pilih wali —</option>
+              {daftarWali.map((w) => {
+              var _a;
+              return (<option key={w.id} value={w.id}>
+                  {(_a = w.nama_lengkap) !== null && _a !== void 0 ? _a : "(tanpa nama)"}{w.nomor_telepon ? ` • ${w.nomor_telepon}` : ""}
+                </option>);
+          })}
+            </Select>
+          </div>
           <p className="mt-1 text-xs text-fisa-500">
             {daftarWali.length === 0
             ? "Belum ada data wali. Tambahkan dulu lewat tab Data Wali (cukup nama & nomor telepon)."
-            : "Wali diambil dari Data Wali. Tambahkan wali baru di tambah wali bila belum terdaftar."}
+            : "Pilih wali dari daftar Data Wali. Tambahkan wali baru di tombol Tambah Wali bila belum terdaftar."}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-          <Button type="submit" disabled={simpan}>
+        <div className="flex flex-col-reverse gap-2 border-t border-fisa-100 pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={onClose} className="sm:min-w-24">Batal</Button>
+          <Button type="submit" disabled={simpan} className="sm:min-w-32">
             {simpan && <Loader2 size={16} className="animate-spin"/>}
-            {sunting ? "Simpan" : "Tambah"}
+            {sunting ? "Simpan Perubahan" : "Tambah Santri"}
           </Button>
         </div>
       </form>

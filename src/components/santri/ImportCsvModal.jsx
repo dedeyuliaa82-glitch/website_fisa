@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { pesanGalatDb } from "@/lib/utils";
 import { Button, Modal } from "@/components/ui";
-import { Upload, Loader2, FileSpreadsheet } from "lucide-react";
+import { Upload, Loader2, FileSpreadsheet, Info } from "lucide-react";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -69,7 +69,6 @@ export function ImportCsvModal({ onClose, onSelesai }) {
                 if (w.nama_lengkap)
                     peta.set(w.nama_lengkap.trim().toLowerCase(), w.id);
             });
-            // Buat otomatis wali yang belum terdaftar (tanpa akun login).
             const waliBaru = [...new Set(rows
                     .map((r) => r.wali.trim())
                     .filter((n) => !UUID_RE.test(n) && !peta.has(n.toLowerCase())))];
@@ -109,14 +108,17 @@ export function ImportCsvModal({ onClose, onSelesai }) {
     }
     return (<Modal open onClose={onClose} title="Impor Santri (CSV)">
       <div className="space-y-4">
-        <div className="rounded-xl bg-fisa-50 p-4 text-xs leading-relaxed text-fisa-700">
-          <p className="font-bold">Format CSV:</p>
-          <code className="mt-1 block rounded bg-white p-2 font-mono text-[11px]">
+        <div className="rounded-xl border border-fisa-100 bg-fisa-50 p-4 text-xs leading-relaxed text-fisa-700">
+          <div className="flex items-start gap-2 mb-3">
+            <Info size={16} className="mt-0.5 shrink-0 text-fisa-600"/>
+            <p className="font-bold text-fisa-900">Format CSV</p>
+          </div>
+          <code className="mt-1 block rounded bg-white border border-fisa-100 p-2.5 font-mono text-[11px] overflow-x-auto">
             nama_santri,nis,tingkatan,luar_kota,wali<br />
             Ahmad Fauzi,12345,smp,false,H. Abdullah<br />
             Siti Aisyah,12346,smk,true,H. Abdullah
           </code>
-          <p className="mt-2">Tulis <b>nama wali</b> — tidak perlu UUID. Wali yang belum terdaftar dibuat otomatis. Kolom lama <b>id_orang_tua</b> (UUID) masih didukung. File Excel (.xlsx) → Save As → CSV terlebih dahulu.</p>
+          <p className="mt-3">Tulis <b>nama wali</b> — tidak perlu UUID. Wali yang belum terdaftar dibuat otomatis. Kolom lama <b>id_orang_tua</b> (UUID) masih didukung. File Excel (.xlsx) → Save As → CSV terlebih dahulu.</p>
         </div>
         <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={(e) => {
             var _a;
@@ -128,7 +130,7 @@ export function ImportCsvModal({ onClose, onSelesai }) {
           {proses ? <Loader2 size={18} className="animate-spin"/> : <Upload size={18}/>}
           {proses ? "Mengimpor…" : "Pilih File CSV"}
         </Button>
-        {hasil && (<p className={`rounded-xl p-3 text-sm font-semibold ${hasil.startsWith("Berhasil") ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+        {hasil && (<p className={`rounded-xl p-3 text-sm font-semibold ${hasil.startsWith("Berhasil") ? "bg-emerald-50 border border-emerald-100 text-emerald-700" : "bg-red-50 border border-red-100 text-red-700"}`}>
             {hasil}
           </p>)}
         <p className="flex items-center justify-center gap-1 text-center text-xs text-fisa-500">

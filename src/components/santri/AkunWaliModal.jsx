@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { pesanGalatDb } from "@/lib/utils";
 import { Button, Input, Label, Modal } from "@/components/ui";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Mail, Lock, ShieldCheck } from "lucide-react";
 
 /**
  * Atur akun login wali (tabel public.users).
@@ -78,28 +78,44 @@ export function AkunWaliModal({ wali, akun, onClose, onSelesai }) {
         }
     }
     return (<Modal open onClose={onClose} title={`Akun Login — ${wali.nama_lengkap ?? "Wali"}`}>
-      {error && (<div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>)}
+      <p className="-mt-1 mb-5 text-sm leading-relaxed text-fisa-600">
+        Buat atau ubah akun login aplikasi mobile FISA untuk wali ini. Login pakai <b>email + password</b>.
+      </p>
+
+      {error && (<div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <span>{error}</span>
+        </div>)}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label>Email</Label>
-          <Input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cth: abdullah@email.com" autoComplete="off"/>
+          <div className="relative">
+            <Mail size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+            <Input autoFocus required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cth: abdullah@email.com" autoComplete="off" className="pl-10"/>
+          </div>
         </div>
         <div>
-          <Label>{akun ? "Password Baru (opsional)" : "Password"}</Label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={akun ? "Kosongkan bila tidak diubah" : "Minimal 6 karakter"} autoComplete="new-password"/>
+          <Label>{akun ? "Password Baru (kosongkan bila tidak diubah)" : "Password"}</Label>
+          <div className="relative">
+            <Lock size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fisa-400"/>
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={akun ? "Kosongkan bila tidak diubah" : "Minimal 6 karakter"} autoComplete="new-password" className="pl-10"/>
+          </div>
+          <p className="mt-1 text-xs text-fisa-500">
+            {akun ? "Biarkan kosong jika password tidak diubah." : "Password ini dipakai wali untuk login aplikasi mobile."}
+          </p>
         </div>
-        <p className="rounded-xl bg-fisa-50 p-3 text-xs leading-relaxed text-fisa-600">
-          Wali login di <b>aplikasi mobile FISA</b> memakai <b>email</b> dan password ini.
-          Tidak memakai Authentication Supabase.
-        </p>
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-          <Button type="submit" disabled={simpan}>
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3.5 text-xs leading-relaxed text-emerald-700">
+          <ShieldCheck size={16} className="mt-0.5 shrink-0"/>
+          <span>Wali login di aplikasi mobile FISA memakai email dan password ini. Tidak memakai Authentication Supabase.</span>
+        </div>
+        <div className="flex flex-col-reverse gap-2 border-t border-fisa-100 pt-4 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={onClose} className="sm:min-w-24">Batal</Button>
+          <Button type="submit" disabled={simpan} className="sm:min-w-32">
             {simpan && <Loader2 size={16} className="animate-spin"/>}
             Simpan
           </Button>
         </div>
-        {akun && (<Button type="button" variant="danger" className="w-full" disabled={simpan} onClick={hapusAkun}>
+        {akun && (<Button type="button" variant="danger" className="w-full sm:w-auto" disabled={simpan} onClick={hapusAkun}>
             <Trash2 size={16}/> Hapus Akun Login
           </Button>)}
       </form>

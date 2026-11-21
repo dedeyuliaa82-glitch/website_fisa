@@ -94,13 +94,14 @@ export default function VerifikasiPage() {
         </div>
       </Card>
 
-      <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm">
+      <Card className="rounded-2xl border border-fisa-100 bg-white overflow-hidden shadow-sm p-0">
         {loading ? (<div className="p-8 text-center">
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12"/>)}
-          </div>) : tampil.length === 0 ? (<p className="p-10 text-center text-sm font-medium text-fisa-500">
-            Tidak ada transaksi yang cocok.
-          </p>) : (<div className="overflow-x-auto">
-            <table className="w-full min-w-3xl text-left text-sm">
+          </div>) : tampil.length === 0 ? (<div className="flex flex-col items-center gap-2 p-10 text-center">
+            <Eye size={28} className="text-fisa-300"/>
+            <p className="text-sm font-medium text-fisa-500">Tidak ada transaksi yang cocok.</p>
+          </div>) : (<div className="overflow-x-auto p-4">
+            <table className="w-full min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-fisa-100 bg-gradient-to-r from-fisa-50 to-slate-50 text-xs font-bold uppercase tracking-wide text-fisa-500">
                   <th className="px-5 py-3.5">Tanggal</th>
